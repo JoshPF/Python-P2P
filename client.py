@@ -1,5 +1,6 @@
-import _thread as thread
+from threading import *
 from socket import *
+import platform
 
 SERVER_PORT = 7734
 
@@ -38,13 +39,54 @@ def lookup(client_host, client_port, server_host, server_port):
     request = 'LOOKUP RFC %s P2P-CI/1.0\r\nHost: %s\r\nPort: %s\r\nTitle: %s' % (rfc_num, client_host, client_port, rfc_title)
     send_request(request, server_host, server_port)
 
+def peer_connection(peer_sock):
+    request = peer_sock.recv(1024).decode()
+    print(request)
+    message = 'Connection confirmed.\r\n'
+    peer_sock.send(message.encode())
+    peer_sock.close()
 
+def host_peers(client_port):
+    client_sock = socket(AF_INET, SOCK_STREAM)
+    client_sock.bind(('', client_port))
+    print('client_port: %d' % client_port )
+    client_sock.listen(1)
+    while True:
+        (peer_sock, peer_host) = client_sock.accept()
+        print('Connection received from %s\r\n' % str(peer_host))
+        th = Thread(target=peer_connection,args=(peer_sock,))
+        th.start()
+        th.join()
+    client_sock.close()
+
+def send_peer_request(request, peer_host, peer_port):
+    sock = socket(AF_INET, SOCK_STREAM)
+    sock.connect((peer_host, peer_port))
+    sock.send(request.encode())
+    response = sock.recv(1024).decode()
+    print('Response from peer:\r\n%s' % response)
+
+def get_rfc(client_host, client_port):
+    print('Enter the RFC Number you would like to download: ')
+    rfc_num = input()
+    print('Enter the peer hostname you would like to download the RFC from: ')
+    peer_host = input()
+    print('Enter the peer port you would like to download the RFC form: ')
+    peer_port = int(input())
+    request = 'GET RFC %s P2P-CI/1.0\r\nHost: %s\r\nOS: %s' % (rfc_num, peer_host, platform.system())
+    send_peer_request(request, peer_host, peer_port)
+    
 def main():
     client_host = input('Enter a unique hostname: ')
     client_port = int(input('Enter a unique port number: '))
 
     server_host = input('Enter hostname of central server: ')
     server_port = SERVER_PORT
+
+    upload_thread = Thread(target=host_peers,args=(client_port,))
+    # End thread when quitting.
+    upload_thread.daemon = True
+    upload_thread.start()
 
     join(client_host, client_port, server_host, server_port)
     while True:
@@ -53,7 +95,7 @@ def main():
         if user_input.lower() == 'add':
             add_rfc(client_host, client_port, server_host, server_port)
         elif user_input.lower() == 'get':
-            print('not implemented')
+            get_rfc(client_host, client_port)
             exit(1)
         elif user_input.lower() == 'list':
             list_rfcs(client_host, client_port, server_host, server_port)
