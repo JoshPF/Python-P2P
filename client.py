@@ -30,6 +30,15 @@ def list_rfcs(client_host, client_port, server_host, server_port):
     request = "LIST %s P2P-CI/1.0\r\nHost: %s\r\nPort: %d" % (phrase.upper(), client_host, client_port)
     send_request(request, server_host, server_port)
 
+def lookup(client_host, client_port, server_host, server_port):
+    print('Enter the RFC number you wish to find: ')
+    rfc_num = input()
+    print('Enter the RFC title you wish to find: ')
+    rfc_title = input()
+    request = 'LOOKUP RFC %s P2P-CI/1.0\r\nHost: %s\r\nPort: %s\r\nTitle: %s' % (rfc_num, client_host, client_port, rfc_title)
+    send_request(request, server_host, server_port)
+
+
 def main():
     client_host = input('Enter a unique hostname: ')
     client_port = int(input('Enter a unique port number: '))
@@ -50,7 +59,7 @@ def main():
             list_rfcs(client_host, client_port, server_host, server_port)
             exit(1)
         elif user_input.lower() == 'lookup':
-            print('not implemented')
+            lookup(client_host, client_port, server_host, server_port)
             exit(1)
         elif user_input.lower() == 'quit':
             print('Exiting.')

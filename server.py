@@ -5,15 +5,15 @@ SERVER_PORT = 7734
 rfc_index = []
 peers = []
 
-class Peer:
-    def __init__(self, host, port):
-        self.host = host
-        self.port = port
-
 class RFC:
     def __init__(self, number, title, host, port):
         self.number = number
         self.title = title
+        self.host = host
+        self.port = port
+
+class Peer:
+    def __init__(self, host, port):
         self.host = host
         self.port = port
 
@@ -41,6 +41,7 @@ def add(request, client_socket):
     rfc = RFC(rfc_number, rfc_title, host, port)
     rfc_index.append(rfc)
     message = "P2P-CI/1.0 200 OK\r\nRFC%s %s %s %s\r\n" % (rfc_number, rfc_title, host, port)
+
     client_socket.send(message.encode())
 
 def list_rfcs(request, client_socket):
@@ -63,6 +64,27 @@ def list_rfcs(request, client_socket):
             message += '%s\r\n%s\r\n' % (phrase, rfc.title)
     client_socket.send(message.encode())
 
+def lookup(request, client_socket):
+    # Request format:
+    # LOOKUP RFC 3457 P2P-CI/1.0
+    # Host: thishost.csc.ncsu.edu
+    # Port: 5678
+    # Title: Requirements for IPsec Remote Access Scenarios
+    req_rfc_num = request[0].split(' ')[2]
+    rfc_found = False
+    rfcs_matched = []
+    for rfc in rfc_index:
+        if req_rfc_num == rfc.number:
+            rfc_found = True
+            rfcs_matched.append(rfc)           
+    if rfc_found:
+        message = 'P2P-CI/1.0 200 OK\r\n'
+        for rfc in rfcs_matched:
+            message += 'RFC %s %s %s %s\r\n' % (rfc.number, rfc.title, rfc.host, rfc.port)
+    else:
+        message = 'P2P-CI/1.0 404 NOT_FOUND'
+    client_socket.send(message.encode())
+
 def main():
     server_port = SERVER_PORT
     server_sock = socket(AF_INET, SOCK_STREAM)
@@ -80,6 +102,8 @@ def main():
             add(req_list, client_sock)
         elif "LIST" in req_list[0]:
             list_rfcs(req_list, client_sock)
+        elif "LOOKUP" in req_list[0]:
+            lookup(req_list, client_sock)
         else:
             error_msg = "P2P-CI/1.0 400 Bad Request\r\n"
             client_sock.send(error_msg.encode())
