@@ -35,7 +35,7 @@ def add(request, client_socket):
     # Port: 5678
     # Title: A Proferred Official ICP 
     rfc_number = request[0].split(' ')[2]
-    rfc_title = request[3].split(':')[1]
+    rfc_title = request[3].split(':')[1].strip()
     host = request[1].split(':')[1]
     port = request[2].split(':')[1]
     rfc = RFC(rfc_number, rfc_title, host, port)
@@ -51,17 +51,10 @@ def list_rfcs(request, client_socket):
     # Port: 5678
     host = request[1].split(':')[1]
     port = request[2].split(':')[1]
-    phrase = request[0].split(' ')[1]
-    if phrase.lower() == 'all':
-        phrase = ''
-
     message = ''
-    message += 'P2P-CI/1.0 200 OK %s\r\n' % phrase
+    message += 'P2P-CI/1.0 200 OK\r\n'
     for rfc in rfc_index:
-        if phrase.lower() in rfc.title.lower():
-            message += 'RFC%s %s %s %s\r\n' % (rfc.number, rfc.title, host, port)
-        else:
-            message += '%s\r\n%s\r\n' % (phrase, rfc.title)
+        message += 'RFC %s %s %s %s\r\n' % (rfc.number, rfc.title, rfc.host, rfc.port)
     client_socket.send(message.encode())
 
 def lookup(request, client_socket):
@@ -89,7 +82,7 @@ def main():
     server_port = SERVER_PORT
     server_sock = socket(AF_INET, SOCK_STREAM)
     server_sock.bind(('', server_port))
-    server_sock.listen(1)
+    server_sock.listen(5)
     print('Awaiting connection.\r\n')
     while True:
         client_sock, client_addr = server_sock.accept()
