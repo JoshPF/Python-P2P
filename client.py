@@ -55,19 +55,25 @@ def peer_connection(peer_sock):
     # Content-Length: 12345
     # Content-Type: text/text
     # (data data data ...)
+
     file_name = rfc_num + '.txt'
-    date = str(datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p"))
-    last_modified = str(os.stat(file_name).st_mtime)
-    client_os = platform.system()
-    file_size = os.path.getsize(file_name)
-    message = 'P2P-CI/1.0 200 OK\r\nDate: %s\r\nOS: %s\r\nLast Modified: %s\r\nContent-Length: %s\r\nContent-Type: text/plain\r\n' % (date, last_modified, client_os, file_size)
-    with open('%s.txt' % rfc_num, 'r') as f:
-        file_content = f.readlines()
-        for line in file_content:
-            message += line
-        f.close()  
-    peer_sock.send(message.encode())
-    peer_sock.close()
+    if os.path.isfile(file_name):
+        date = str(datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p"))
+        last_modified = str(os.stat(file_name).st_mtime)
+        client_os = platform.system()
+        file_size = os.path.getsize(file_name)
+        message = 'P2P-CI/1.0 200 OK\r\nDate: %s\r\nOS: %s\r\nLast Modified: %s\r\nContent-Length: %s\r\nContent-Type: text/plain\r\n' % (date, last_modified, client_os, file_size)
+        with open('%s.txt' % rfc_num, 'r') as f:
+            file_content = f.readlines()
+            for line in file_content:
+                message += line
+            f.close()  
+        peer_sock.send(message.encode())
+        peer_sock.close()
+    else:
+        message = 'P2P-CI/1.0 404 NOT_FOUND\r\n'
+        peer_sock.send(message.encode())
+        peer_sock.close()
 
 def upload_server(client_port):
     client_sock = socket(AF_INET, SOCK_STREAM)
@@ -157,7 +163,8 @@ def main():
                 print('Exiting.')
                 exit(0)
             else:
-                print('Invalid command. Please try again.\r\n')
+                print("P2P-CI/1.0 400 Bad Request\r\n")
+                print("Invalid command. Please try again.\r\n")
                 continue
         except Exception as e:
             print('Error occured: ' + str(e))

@@ -89,6 +89,14 @@ def main():
         request = client_sock.recv(1024).decode()
         print(request + "\r\n")
         req_list = request.split('\r\n')
+        # <USER_OPTION> RFC # P2P-CI/<VERSION>
+        version = req_list[0].split('/')[1]
+        if version.strip() != "1.0":
+            print(version)
+            message = 'P2P-CI/1.0 505 P2P-CI Version Not Supported\r\n'
+            client_sock.send(message.encode())
+            client_sock.close()
+            continue
         if "JOIN" in req_list[0]:
             join(req_list, client_sock)
         elif "ADD" in req_list[0]:
