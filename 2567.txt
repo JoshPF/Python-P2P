@@ -1,7 +1,0 @@
-This is another title.
-
-More
-content
-in
-this
-file.

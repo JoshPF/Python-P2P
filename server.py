@@ -2,12 +2,11 @@ from socket import *
 
 SERVER_PORT = 7734
 
-rfc_index = []
+file_index = []
 peers = []
 
-class RFC:
-    def __init__(self, number, title, host, port):
-        self.number = number
+class File:
+    def __init__(self, title, host, port):
         self.title = title
         self.host = host
         self.port = port
@@ -19,8 +18,8 @@ class Peer:
 
 def join(request, client_socket):
     # Request format:
-    # JOIN P2P-CI/1.0
-    # Host: HELLO
+    # JOIN Python-P2P/1.0
+    # Host: HOST
     # Port: 12000
     host = request[1].split(':')[1]
     port = request[2].split(':')[1]
@@ -30,55 +29,56 @@ def join(request, client_socket):
 
 def add(request, client_socket):
     # Request format:
-    # ADD RFC 123 P2P-CI/1.0
+    # ADD FILE Python-P2P/1.0
     # Host: thishost.csc.ncsu.edu
     # Port: 5678
-    # Title: A Proferred Official ICP 
-    rfc_number = request[0].split(' ')[2]
-    rfc_title = request[3].split(':')[1].strip()
+    # Title: filename.txt
+    file_title = request[3].split(':')[1].strip()
     host = request[1].split(':')[1]
     port = request[2].split(':')[1]
-    rfc = RFC(rfc_number, rfc_title, host, port)
-    rfc_index.append(rfc)
-    message = "P2P-CI/1.0 200 OK\r\nRFC%s %s %s %s\r\n" % (rfc_number, rfc_title, host, port)
+    f = File(file_title, host, port)
+    file_index.append(f)
+    message = "Python-P2P/1.0 200 OK\r\n %s %s %s\r\n" % (file_title, host, port)
 
     client_socket.send(message.encode())
 
-def list_rfcs(request, client_socket):
+def list_files(request, client_socket):
     # Request format:
-    # LIST ALL P2P-CI/1.0 
+    # LIST ALL Python-P2P/1.0 
     # Host: thishost.csc.ncsu.edu 
     # Port: 5678
     host = request[1].split(':')[1]
     port = request[2].split(':')[1]
-    message = ''
-    message += 'P2P-CI/1.0 200 OK\r\n'
-    for rfc in rfc_index:
-        message += 'RFC %s %s %s %s\r\n' % (rfc.number, rfc.title, rfc.host, rfc.port)
+    message = 'Python-P2P/1.0 200 OK\r\n'
+    for f in file_index:
+        message += '%s %s %s\r\n' % (f.title, f.host, f.port)
     client_socket.send(message.encode())
 
 def lookup(request, client_socket):
     # Request format:
-    # LOOKUP RFC 3457 P2P-CI/1.0
+    # LOOKUP FILE test.txt Python-P2P/1.0
     # Host: thishost.csc.ncsu.edu
     # Port: 5678
     # Title: Requirements for IPsec Remote Access Scenarios
-    req_rfc_num = request[0].split(' ')[2]
-    rfc_found = False
-    rfcs_matched = []
-    for rfc in rfc_index:
-        if req_rfc_num == rfc.number:
-            rfc_found = True
-            rfcs_matched.append(rfc)           
-    if rfc_found:
-        message = 'P2P-CI/1.0 200 OK\r\n'
-        for rfc in rfcs_matched:
-            message += 'RFC %s %s %s %s\r\n' % (rfc.number, rfc.title, rfc.host, rfc.port)
+    req_filename = request[0].split(' ')[2]
+    file_found = False
+    files_matched = []
+    for f in file_index:
+        if req_filename == f.title:
+            file_found = True
+            files_matched.append(f)           
+    if file_found:
+        message = 'Python-P2P/1.0 200 OK\r\n'
+        for f in files_matched:
+            message += '%s %s %s\r\n' % (f.title, f.host, f.port)
     else:
-        message = 'P2P-CI/1.0 404 NOT_FOUND'
+        message = 'Python-P2P/1.0 404 NOT_FOUND'
     client_socket.send(message.encode())
 
 def main():
+    server_host = gethostbyname(gethostname())
+    print('Server started on %s:%d' % (server_host, SERVER_PORT))
+
     server_port = SERVER_PORT
     server_sock = socket(AF_INET, SOCK_STREAM)
     server_sock.bind(('', server_port))
@@ -89,24 +89,17 @@ def main():
         request = client_sock.recv(1024).decode()
         print(request + "\r\n")
         req_list = request.split('\r\n')
-        # <USER_OPTION> RFC # P2P-CI/<VERSION>
-        version = req_list[0].split('/')[1]
-        if version.strip() != "1.0":
-            print(version)
-            message = 'P2P-CI/1.0 505 P2P-CI Version Not Supported\r\n'
-            client_sock.send(message.encode())
-            client_sock.close()
-            continue
+
         if "JOIN" in req_list[0]:
             join(req_list, client_sock)
         elif "ADD" in req_list[0]:
             add(req_list, client_sock)
         elif "LIST" in req_list[0]:
-            list_rfcs(req_list, client_sock)
+            list_files(req_list, client_sock)
         elif "LOOKUP" in req_list[0]:
             lookup(req_list, client_sock)
         else:
-            error_msg = "P2P-CI/1.0 400 Bad Request\r\n"
+            error_msg = "Python-P2P 400 Bad Request\r\n"
             client_sock.send(error_msg.encode())
         client_sock.close()
     print('Exiting.\r\n')
