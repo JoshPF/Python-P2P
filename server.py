@@ -1,6 +1,6 @@
 from socket import *
 
-SERVER_PORT = 7734
+SERVER_PORT = 7777
 
 file_index = []
 peers = []
@@ -56,15 +56,15 @@ def list_files(request, client_socket):
 
 def lookup(request, client_socket):
     # Request format:
-    # LOOKUP FILE test.txt Python-P2P/1.0
+    # LOOKUP Python-P2P/1.0
     # Host: thishost.csc.ncsu.edu
     # Port: 5678
-    # Title: Requirements for IPsec Remote Access Scenarios
-    req_filename = request[0].split(' ')[2]
+    # Title: test.txt
+    req_filename = request[3].split(':')[1]
     file_found = False
     files_matched = []
     for f in file_index:
-        if req_filename == f.title:
+        if req_filename.lower().strip() == f.title.lower().strip():
             file_found = True
             files_matched.append(f)           
     if file_found:

@@ -6,7 +6,7 @@ import platform
 import random
 import datetime
 
-SERVER_PORT = 7734
+SERVER_PORT = 7777
 
 def send_request(request, server_host, server_port):
     sock = socket(AF_INET, SOCK_STREAM)
@@ -26,7 +26,7 @@ def add_file(client_host, client_port, server_host, server_port):
     request = "ADD Python-P2P/1.0\r\nHost: %s\r\nPort: %s\r\nFilename: %s\r\n" % (client_host, client_port, file_title)
     # Create the file locally if it does not already exist
     with open('local_files/%s' % file_title, 'w+') as f:
-        f.write(filef_title)
+        f.write(file_title)
         f.close()
     send_request(request, server_host, server_port)
 
