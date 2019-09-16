@@ -87,6 +87,7 @@ def send_peer_request(request, peer_host, peer_port):
     sock.send(request.encode())
     response = sock.recv(1024).decode()
     print('\r\nResponse from peer:\r\n%s\r\n' % response)
+    return response
 
 def get_file(client_host, client_port):
     print('Enter the file name you would like to download: ')
@@ -96,7 +97,11 @@ def get_file(client_host, client_port):
     print('Enter the peer port you would like to download the file form: ')
     peer_port = int(input())
     request = 'GET FILE %s Python-P2P/1.0\r\nHost: %s\r\nOS: %s' % (file_name, peer_host, platform.system())
-    send_peer_request(request, peer_host, peer_port)
+    response = send_peer_request(request, peer_host, peer_port)
+    with open('local_files/%s' % file_name, 'w+') as f:
+        # Remove Header Information (first 6 lines)
+        for line in response.split('\n')[6:]:
+            f.write(line)
 
 def notify_server_about_files(client_host, client_port, server_host, server_port):
     files = glob('local_files/*')
